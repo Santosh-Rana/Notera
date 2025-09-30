@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Note Taker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" /></link>
+    <style>
+      /* Basic Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    min-height: 100vh;
+}
+
+/* --- THEME STYLES (Light and Dark Mode) --- */
+
+/* Light Mode (Default) */
+.light-mode {
+    background-color: #f4f7f6; /* Very light grey/white */
+    color: #333; /* Dark text */
+}
+
+/* Dark Mode */
+.dark-mode {
+    background-color: #1e1e1e; /* Deep dark grey */
+    color: #f0f0f0; /* Light text */
+}
+
+.dark-mode header,
+.dark-mode .new-note-area,
+.dark-mode .note-card {
+    background-color: #2c2c2c; /* Slightly lighter than body for contrast */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.dark-mode #note-input,
+.dark-mode button,
+.dark-mode select,
+.dark-mode input[type="file"] {
+    background-color: #3a3a3a;
+    color: #f0f0f0;
+    border-color: #555;
+}
+
+
+/* --- LAYOUT AND HEADER --- */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: center;
+    padding: 20px 40px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border:1px solid black;
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.controls button, .note-options button, .note-options select, .note-options input[type="color"] {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-left: 10px;
+    font-weight: bold;
+}
+
+/* --- NOTE INPUT AREA --- */
+.new-note-area {
+    width: 90%;
+    max-width: 800px;
+    margin: 30px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 20px;
+    box-shadow: 0 8px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* MODIFIED: #note-input is now a contenteditable div */
+#note-input {
+    width: 100%;
+    min-height: 150px; /* Use min-height */
+    padding: 15px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    resize: vertical;
+    font-size: 16px;
+    outline: none; /* Remove focus outline */
+    white-space: pre-wrap; /* Preserve formatting and wrap */
+    /* Add placeholder style for contenteditable */
+    font-style: italic;
+    color: #999;
+}
+/* Style when content is present to override placeholder style */
+#note-input:not(:empty) {
+    font-style: normal;
+    color: inherit;
+}
+/* Placeholder for contenteditable */
+#note-input:empty::before {
+    content: attr(placeholder);
+    display: block;
+    color: #999;
+    font-style: italic;
+}
+
+
+.note-options {
+    display:flex; /* Changed to flex for better toolbar layout */
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap; /* Allow wrapping on small screens */
+    
+}
+
+/* New Formatting Buttons */
+.format-btn {
+    padding: 8px 10px !important; /* Adjust padding for icons */
+    font-size: 16px;
+    background-color: #5bc0de;
+    color: white;
+}
+.format-btn:hover {
+    background-color: #31b0d5;
+}
+
+/* Image Upload Input */
+#image-upload {
+    max-width: 150px;
+    padding: 8px;
+    border: 1px solid #ccc;
+}
+
+/* --- NOTES DISPLAY --- */
+.notes-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    padding: 20px 40px;
+}
+
+.note-card {
+    padding: 20px;
+    border-radius: 10px;
+    background-color: #ffffff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    word-wrap: break-word;
+    /* Default Text Size for dynamic adjustment */
+    font-size: var(--note-font-size, 16px);
+}
+
+.note-content {
+    margin-bottom: 15px;
+    /* Allow HTML content (including images) to be rendered */
+}
+
+/* Style for images inside a note-card */
+/* Style for images inside a note-card and the input area */
+#note-input img, 
+.note-content img {
+    /* Ensures the image never exceeds the width of its container */
+    max-width: 100%; 
+    /* Set a default width, making it manageable when first inserted */
+    width: 50%; /* New: Default image width is 50% of the note area */
+    height: auto;
+    display: block;
+    margin: 10px 0;
+    /* This makes the image resizable when in contenteditable mode */
+    cursor: grab;
+}
+
+/* Optional: Make the resizable handles more visible when editing */
+#note-input img:focus,
+.note-content[contenteditable="true"] img:focus {
+    outline: 2px solid #007bff; /* Adds a blue border when image is selected for resizing */
+}
+
+
+.note-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+/* --- SIDEBAR STYLING (Unchanged but kept for completeness) --- */
+.app-layout {
+    display: flex;
+    min-height: calc(100vh - 80px);
+}
+
+.sidebar {
+    width: 250px;
+    padding: 20px;
+    background:none;
+    box-shadow: 2px 10px 10px rgba(0, 0, 0, 0.05);
+    position: fixed;
+    left: -250px;
+    top: 125px;
+    bottom:0;
+    z-index: 100;
+    transition: left 0.3s ease-in-out;
+    border-radius: 10px;
+    border-top:1px solid black;
+    height:500px;
+    border-bottom:1px solid black;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.sidebar.open {
+    left: 0;
+}
+
+.dark-mode .sidebar {
+    background:none;
+    box-shadow: 2px 5px 5px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.sidebar h2 {
+    margin-bottom: 15px;
+    color: #007bff;
+}
+
+#category-list {
+    list-style: none;
+    padding: 0;
+}
+
+.category-item {
+    padding: 10px 15px;
+    margin-bottom: 5px;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: background-color 0.2s, color 0.2s;
+    font-weight: 500;
+}
+
+.category-item:hover {
+    background-color: #e0e0e0;
+}
+
+.category-item.active {
+    background-color:darkkhaki;
+    color: black;
+    font-weight: bold;
+    border:1px solid black;
+}
+
+.dark-mode .category-item {
+    color: #f0f0f0;
+}
+.dark-mode .category-item:hover {
+    background-color: #3a3a3a;
+}
+.dark-mode .category-item.active {
+    background-color:#007bff;
+    color: white;
+}
+
+main {
+    flex-grow: 1;
+    padding: 0 40px 20px 40px;
+    width: 100%;
+}
+
+.new-note-area {
+    width: 90%;
+    max-width: 800px;
+    margin: 30px auto;
+}
+
+.notes-container {
+    padding: 20px 0;
+}
+
+/* CONTROL BUTTON STYLES (Unchanged but kept for completeness) */
+#category-toggle, #recycle-bin-toggle, #mode-toggle, #increase-text, #decrease-text {
+    border-radius:10px;
+    padding-top:5px;
+    background-color:Tan;
+    box-shadow:0px 2px 2px;
+}
+.controls{
+    margin-top:10px;
+    align-items: center;
+    justify-content:center;
+    display:flex;
+}
+#font-style-select{
+  border-radius:50%;
+    box-shadow:0px 10px 10px rgba(0,0,0,0.3);
+    background-color:tan;
+    padding-left: 10px;
+    color:black;
+    height:55px;
+    width:55px;
+    margin-top:10px;
+    margin-left:53px;
+    border:1px solid black;
+}
+#add-note{
+  border-radius:50%;
+    background:conic-gradient(darkkhaki,olive,ivory);
+    box-shadow:0px 10px 10px rgba(0,0,0,0.3);
+    border:1px solid black;
+    font-size:20px;
+    height:55px;
+    width:55px;
+}
+h1{
+    font-family:"times";
+}
+#font-color-picker{
+  height:50px;
+  width:50px;
+  border-radius:50%;
+  background:conic-gradient(tan) ;
+  box-shadow:0px 10px 10px rgba(0,0,0,0.3);
+  border:1px solid black;
+}
+
+    </style>
+</head>
+<body class="light-mode">
+    <header>
+        <h1>Digital Note Hub</h1>
+         </header>
+        <div class="controls">
+            <button id="category-toggle"><i class="fa-solid fa-ellipsis-vertical fa-shake" style="color: #000000;"></i></button>
+            <button id="recycle-bin-toggle"><i class="fa-solid fa-trash-can-arrow-up fa-bounce" style="color: #000000;"></i></button>
+            <button id="mode-toggle"><i id="mOon" class="fa-solid fa-moon" style="color: #000000;"></i></button>
+            <button id="increase-text">A+</button>
+            <button class="buton"id="decrease-text">A-</button>
+        </div>
+   
+   
+   <aside class="sidebar" id="sidebar">
+        <h2>Filter by Category</h2>
+        <ul id="category-list">
+            </ul>
+    </aside>
+
+    <main>
+        <section class="new-note-area">
+            <div id="note-input" contenteditable="true" placeholder="Enter your new note here then click plus icon..."></div>
+            
+            <div class="note-options">
+                <button class="format-btn" id="bold-btn"><i class="fa-solid fa-bold"></i></button>
+                <button class="format-btn" id="italic-btn"><i class="fa-solid fa-italic"></i></button>
+                <button class="format-btn" id="underline-btn"><i class="fa-solid fa-underline"></i></button>
+
+                <input type="file" id="image-upload" accept="image/*" title="Add Image">
+                
+                <select id="category-select">
+                    <option value="Uncategorized">U</option> 
+                </select>
+                
+                <select id="font-style-select">
+                     <option value="Arial, sans-serif">Arial</option>
+                     <option value="'Courier New', monospace">Monospace</option>
+                     <option value="'Georgia', serif">Georgia</option>
+                     <option value="'Times', serif">Times</option>
+                     <option value="'Times new roman', serif">Times new</option>
+                     <option value="'Lucida Console', serif">Lucida</option>
+                     <option value="'cursive', serif">cursive</option>
+                     <option value="'fantasy', serif">fantasy</option>
+                     <option value="'calibri', serif">calibri</option>
+                     <option value="'Tahoma', serif">Tahoma</option>
+                     <option value="'palatino', serif">palatino</option>
+                     <option value="'Garamond', serif">Garamond</option>
+                 </select>
+                 <input type="color" id="font-color-picker" value="#333333">
+                 <button id="add-note"><i class="fa-solid fa-plus fa-beat" style="color: #000000;"></i></button>
+
+            </div>
+        </section>
+
+        <section class="notes-container" id="notes-container">
+            </section>
+    </main>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+    // --- ELEMENT SELECTION ---
+    const noteInput = document.getElementById('note-input'); // MODIFIED: Now a DIV
+    const addNoteBtn = document.getElementById('add-note');
+    const notesContainer = document.getElementById('notes-container');
+    const modeToggleBtn = document.getElementById('mode-toggle');
+    const increaseTextBtn = document.getElementById('increase-text');
+    const decreaseTextBtn = document.getElementById('decrease-text');
+    const recycleBinToggleBtn = document.getElementById('recycle-bin-toggle');
+    const newNoteArea = document.querySelector('.new-note-area');
+    const categorySelect = document.getElementById('category-select'); 
+    const categoryList = document.getElementById('category-list');
+    const sidebar = document.getElementById('sidebar');
+    const categoryToggleBtn = document.getElementById('category-toggle');
+
+    // NEW FORMATTING ELEMENTS
+    const boldBtn = document.getElementById('bold-btn');
+    const italicBtn = document.getElementById('italic-btn');
+    const underlineBtn = document.getElementById('underline-btn');
+    const fontStyleSelect = document.getElementById('font-style-select');
+    const fontColorPicker = document.getElementById('font-color-picker');
+    const imageUploadInput = document.getElementById('image-upload');
+
+
+    // Default settings and data arrays
+    let currentFontSize = 16;
+    let notes = []; 
+    let deletedNotes = []; 
+    let isRecycleBinView = false; 
+    let activeCategory = 'All'; 
+    let isSidebarOpen = false; 
+
+    const CATEGORIES = [
+        'Family', 
+        'Girlfriend/boyfriend', 
+        'Friends', 
+        'Institute', 
+        'Office', 
+        'Hospital', 
+        'Others'
+    ];
+
+    // --- UTILITY FUNCTIONS ---
+    const formatDateTime = (timestamp) => {
+        const date = new Date(timestamp);
+        const dateStr = date.toLocaleDateString('en-GB');
+        const timeStr = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        return `${dateStr} ${timeStr}`;
+    };
+
+    // --- CATEGORY UI FUNCTIONS (Unchanged) ---
+    const setupCategoryUI = () => {
+        categorySelect.innerHTML = CATEGORIES.map(cat => 
+            `<option value="${cat}">${cat}</option>`
+        ).join('');
+        
+        categoryList.innerHTML = `
+            <li class="category-item active" data-category="All">All Notes</li>
+            ${CATEGORIES.map(cat => 
+                `<li class="category-item" data-category="${cat}">${cat}</li>`
+            ).join('')}
+        `;
+    };
+    
+    const toggleSidebar = () => {
+        isSidebarOpen = !isSidebarOpen;
+        sidebar.classList.toggle('open', isSidebarOpen);
+    };
+
+
+    // --- LOCAL STORAGE FUNCTIONS (Unchanged) ---
+    const loadNotes = () => {
+        const storedNotes = localStorage.getItem('notes');
+        if (storedNotes) {
+            notes = JSON.parse(storedNotes);
+        }
+        const storedDeletedNotes = localStorage.getItem('deletedNotes');
+        if (storedDeletedNotes) {
+            deletedNotes = JSON.parse(storedDeletedNotes);
+        }
+
+        setupCategoryUI();
+        renderNotes(); 
+
+        const currentMode = localStorage.getItem('mode') || 'light-mode';
+        document.body.className = currentMode;
+        currentFontSize = parseInt(localStorage.getItem('fontSize')) || 16;
+        document.documentElement.style.setProperty('--note-font-size', `${currentFontSize}px`);
+    };
+
+    const saveNotes = () => {
+        localStorage.setItem('notes', JSON.stringify(notes));
+        localStorage.setItem('deletedNotes', JSON.stringify(deletedNotes));
+    };
+
+    // --- NOTE RENDERING (UI) - Uses innerHTML for contenteditable ---
+    const renderNotes = () => {
+        const categoryItems = categoryList.querySelectorAll('.category-item');
+        categoryItems.forEach(item => {
+            item.classList.remove('active');
+            if (item.dataset.category === activeCategory) {
+                item.classList.add('active');
+            }
+        });
+
+        const notesToRender = activeCategory === 'All' 
+            ? notes 
+            : notes.filter(note => note.category === activeCategory);
+
+        notesContainer.innerHTML = '';
+        
+        if (notesToRender.length === 0) {
+            let message = `No notes found in the '<strong>${activeCategory}</strong>' category.`;
+            if (activeCategory === 'All' && notes.length === 0) {
+                 message = `No active notes found. Add a new note!`;
+            }
+            notesContainer.innerHTML = `<p class="empty-message">${message}</p>`;
+        }
+        
+        notesToRender.forEach(note => {
+            const noteCard = document.createElement('div');
+            noteCard.className = 'note-card';
+            noteCard.dataset.id = note.id;
+            noteCard.style.fontFamily = note.fontStyle;
+            noteCard.style.color = note.fontColor;
+            
+            noteCard.innerHTML = `
+                <div class="note-content">${note.text}</div>
+                <div class="note-info">
+                    <small>Category: <strong>${note.category}</strong></small>
+                    <small>Created: ${formatDateTime(note.timestamp)}</small>
+                </div>
+                <div class="note-actions">
+                    <button class="edit-btn">Edit</button>
+                    <button class="delete-btn">Delete (To Bin)</button>
+                    <button class="save-btn" style="display:none;">Save</button>
+                </div>
+            `;
+            notesContainer.prepend(noteCard);
+        });
+    };
+
+    // Recycle Bin rendering (Unchanged)
+    const renderRecycleBin = () => {
+        notesContainer.innerHTML = '';
+        
+        if (deletedNotes.length === 0) {
+             notesContainer.innerHTML = `<p class="empty-message">Recycle Bin is empty!</p>`;
+        }
+
+        deletedNotes.forEach(note => {
+             const noteCard = document.createElement('div');
+            noteCard.className = 'note-card deleted-card';
+            noteCard.dataset.id = note.id;
+            noteCard.style.fontFamily = note.fontStyle;
+            noteCard.style.color = note.fontColor;
+            
+            noteCard.innerHTML = `
+                <div class="note-content">${note.text}</div>
+                <div class="note-info">
+                    <small>Category: <strong>${note.category || 'N/A'}</strong></small>
+                    <small>Deleted: ${formatDateTime(note.deletedTimestamp)}</small>
+                </div>
+                <div class="note-actions">
+                    <button class="restore-btn">Restore</button>
+                    <button class="permanent-delete-btn">Delete Permanently</button>
+                </div>
+            `;
+            notesContainer.prepend(noteCard);
+        });
+    };
+
+    // --- VIEW TOGGLE (Unchanged) ---
+    const toggleView = (isBin) => {
+        isRecycleBinView = isBin;
+        newNoteArea.style.display = isBin ? 'none' : 'block';
+        recycleBinToggleBtn.textContent = isBin ? 'Note' :'Bin';
+        
+        if (isBin && isSidebarOpen) {
+            toggleSidebar();
+        }
+        categoryToggleBtn.style.display = isBin ? 'none' : 'inline-block';
+
+        if (isBin) {
+            renderRecycleBin();
+        } else {
+            if (!activeCategory) activeCategory = 'All'; 
+            renderNotes();
+        }
+    };
+
+    // --- EVENT LISTENERS ---
+    
+    // 1. Category Sidebar Toggle (Unchanged)
+    categoryToggleBtn.addEventListener('click', toggleSidebar);
+
+    // 2. Category Filtering Logic (Unchanged)
+    categoryList.addEventListener('click', (e) => {
+        if (e.target.classList.contains('category-item')) {
+            activeCategory = e.target.dataset.category;
+            if (isRecycleBinView) {
+                toggleView(false);
+            }
+            renderNotes();
+            toggleSidebar();
+        }
+    });
+
+    // 3. CREATE Note (MODIFIED: Uses innerHTML and checks if content is not empty)
+    addNoteBtn.addEventListener('click', () => {
+        // Use innerHTML to get all content (text, formatting, images)
+        const content = noteInput.innerHTML.trim(); 
+        const category = categorySelect.value || 'Uncategorized'; 
+        
+        // Simple check to see if the content is not just the placeholder (empty div)
+        if (content && content !== '<br>' && content !== noteInput.getAttribute('placeholder')) {
+            const now = Date.now();
+            const newNote = {
+                id: now.toString(),
+                // Save the rich content (HTML)
+                text: content, 
+                category: category, 
+                // Keep these for card-level styling
+                fontStyle: fontStyleSelect.value, 
+                fontColor: fontColorPicker.value, 
+                timestamp: now,
+            };
+            notes.push(newNote);
+            saveNotes();
+            
+            activeCategory = category; 
+            if (isRecycleBinView) {
+                 toggleView(false); 
+            } else {
+                 renderNotes();
+            }
+            // Clear the contenteditable div (using innerHTML = '')
+            noteInput.innerHTML = ''; 
+        } else {
+            alert('Note content cannot be empty!');
+        }
+    });
+
+    // 4. Delete/Edit/Restore Logic (MODIFIED: Edit/Save uses innerHTML)
+    notesContainer.addEventListener('click', (e) => {
+        const noteCard = e.target.closest('.note-card');
+        if (!noteCard) return;
+
+        const noteId = noteCard.dataset.id;
+        
+        if (isRecycleBinView) {
+            // Recycle Bin Actions (Unchanged)
+            if (e.target.classList.contains('restore-btn')) {
+                const noteIndex = deletedNotes.findIndex(n => n.id === noteId);
+                const noteToRestore = deletedNotes.splice(noteIndex, 1)[0];
+                delete noteToRestore.deletedTimestamp;
+                notes.push(noteToRestore);
+                saveNotes();
+                renderRecycleBin();
+
+            } else if (e.target.classList.contains('permanent-delete-btn')) {
+                if (confirm('Are you absolutely sure you want to permanently delete this note? This action cannot be undone.')) {
+                    const noteIndex = deletedNotes.findIndex(n => n.id === noteId);
+                    deletedNotes.splice(noteIndex, 1);
+                    saveNotes();
+                    renderRecycleBin(); 
+                }
+            }
+        } else {
+            // Active Notes Actions
+            let noteIndex = notes.findIndex(n => n.id === noteId);
+
+            if (e.target.classList.contains('delete-btn')) {
+                // SOFT DELETE (Unchanged)
+                if (confirm('Do you want to move this note to the Recycle Bin?')) {
+                    const noteToDelete = notes.splice(noteIndex, 1)[0];
+                    noteToDelete.deletedTimestamp = Date.now();
+                    deletedNotes.push(noteToDelete);
+                    saveNotes();
+                    renderNotes(); 
+                }
+            } else if (e.target.classList.contains('edit-btn')) {
+                // EDIT Mode ON
+                const contentDiv = noteCard.querySelector('.note-content');
+                const saveBtn = noteCard.querySelector('.save-btn');
+                const editBtn = e.target;
+                
+                contentDiv.contentEditable = 'true';
+                contentDiv.focus();
+                
+                editBtn.style.display = 'none';
+                saveBtn.style.display = 'inline-block';
+
+            } else if (e.target.classList.contains('save-btn')) {
+                // EDIT Mode OFF (Save)
+                const contentDiv = noteCard.querySelector('.note-content');
+                const editBtn = noteCard.querySelector('.edit-btn');
+                const saveBtn = e.target;
+
+                // UPDATE: Save the new rich content (HTML)
+                notes[noteIndex].text = contentDiv.innerHTML;
+                saveNotes();
+
+                contentDiv.contentEditable = 'false';
+                saveBtn.style.display = 'none';
+                editBtn.style.display = 'inline-block';
+            }
+        }
+    });
+    
+    // 5. Recycle Bin Toggle (Unchanged)
+    recycleBinToggleBtn.addEventListener('click', () => {
+        toggleView(!isRecycleBinView);
+    });
+
+    // 6. UI Customization Functions (Unchanged)
+    modeToggleBtn.addEventListener('click', () => {
+        if (document.body.classList.contains('light-mode')) {
+            document.body.className = 'dark-mode';
+            localStorage.setItem('mode', 'dark-mode');
+            
+        } else {
+            document.body.className = 'light-mode';
+            localStorage.setItem('mode', 'light-mode');
+        }
+    });
+
+    const setTextSize = (size) => {
+        currentFontSize = Math.max(12, Math.min(30, size));
+        document.documentElement.style.setProperty('--note-font-size', `${currentFontSize}px`);
+        localStorage.setItem('fontSize', currentFontSize);
+    };
+
+    increaseTextBtn.addEventListener('click', () => {
+        setTextSize(currentFontSize + 2);
+    });
+
+    decreaseTextBtn.addEventListener('click', () => {
+        setTextSize(currentFontSize - 2);
+    });
+    
+    // --- NEW: Rich Text Formatting & Image Logic ---
+
+    // Helper to execute a formatting command on the selected text
+    const execFormatCommand = (command, value = null) => {
+        // Must focus the contenteditable area first to ensure the command applies correctly
+        noteInput.focus();
+        document.execCommand(command, false, value);
+        // A simple way to keep the text formatting in the note input
+        // For example, if you set font-color, it will apply to the current selection.
+    };
+
+    // 7. Text Formatting (Bold, Italic, Underline)
+    boldBtn.addEventListener('click', (e) => {
+        e.preventDefault(); // Prevent button from blurring the selection
+        execFormatCommand('bold');
+    });
+    italicBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        execFormatCommand('italic');
+    });
+    underlineBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        execFormatCommand('underline');
+    });
+// 8. Font Style and Color (Applied to selected text)
+fontStyleSelect.addEventListener('change', (e) => {
+     // The execCommand for fontName will apply the style to the selected text.
+     // NOTE: 'fontName' uses the value directly as the font family.
+     execFormatCommand('fontName', e.target.value);
+     // Optional: If you want the whole note input to immediately reflect the change,
+     // you can set the whole input style, but this might override selected text styles.
+     // noteInput.style.fontFamily = e.target.value; 
+});
+
+fontColorPicker.addEventListener('change', (e) => {
+    // The execCommand for foreColor will apply the color to the selected text.
+    execFormatCommand('foreColor', e.target.value);
+});
+
+
+    fontColorPicker.addEventListener('change', (e) => {
+        // The execCommand for foreColor will apply the color to the selected text.
+        execFormatCommand('foreColor', e.target.value);
+    });
+
+    // 9. Image Upload Logic
+    imageUploadInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                // Get the base64 data URL of the image
+                const imageUrl = event.target.result;
+                
+                // Insert the image into the contenteditable div at the current cursor position
+                execFormatCommand('insertImage', imageUrl);
+                
+                // Clear the file input so the user can upload the same file again if needed
+                imageUploadInput.value = ''; 
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // --- INITIALIZATION ---
+    loadNotes();
+});
+
+    </script>
+</body>
+</html>
+
